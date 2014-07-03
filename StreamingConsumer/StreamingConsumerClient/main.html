@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" ng-app>
+<head>
+	<meta charset="utf-8">
+	<title>Streaming Consumer - Angular</title>
+	<script src="angular.min.js"></script>
+	<script src="underscore.min.js"></script>
+	<script type="text/javascript">
+		'use strict';
+
+		var http = new XMLHttpRequest();
+
+		function StreamingConsumerController($scope, $http) {
+			$scope.staff = new Array();
+			startProcess($scope);
+		}
+
+		function startProcess(scope) {
+		    http.open('get', 'http://holymissingsitebatman.com/api/streaming/stafflist');
+		    http.onreadystatechange = function () { handleResponse(scope) };
+		    http.send(null);
+		}
+
+		function handleResponse(scope) {
+		    if ((http.readyState != 4 && http.readyState != 3) ||
+		    	(http.readyState == 3 && http.status != 200)   ||
+		    	(http.responseText === null)) {
+		        return;
+		    }
+
+		    var responseItems = http.responseText.split('}');
+		    if (responseItems[responseItems.length-1] === '') {
+		        responseItems.pop();
+		    }
+
+		    if (responseItems.length > 0) {
+			    var responseData = "[" + responseItems.join('},') + "}]";
+			    var data = JSON.parse(responseData);
+
+			    data.forEach(function(d) {
+			    	if (_.where(scope.staff, { 'Id' : d.Id }).length === 0) {
+			    		d.ImageUrl = "http://holymissingsitebatman.com/api/streaming/image/" + d.Id;
+			    		scope.staff.push(d);
+			    	}
+			    });
+
+				scope.$apply();
+			}
+		}	
+	</script>
+	<style type="text/css">
+		img {
+			width: 200px; 
+			height: auto;
+		}
+	</style>
+</head>
+<body ng-controller="StreamingConsumerController">
+	<ul>
+		<li ng-repeat="member in staff">
+			{{ member.FirstName }} {{ member.LastName}} <img ng-src="{{ member.ImageUrl }}">
+		</li>
+	</ul>
+</body>
+</html>
